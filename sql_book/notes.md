@@ -399,3 +399,251 @@ values. Effectively replaces `serial`, which is now deprecated for new,
 production applications.
 
 ## Keys and Constraints ##
+
+One of the key functions of a database is to maintain the integrity and quality
+of the data that it is storing. Keys and Constraints are rules that define what
+data values are allowed in certain columns.
+
+Defining keys and constraints is part of the database design process and
+ensures that the data within a database is reliable and maintains its
+integrity.
+
+Constraints can apply to a specific column, an entire table, more than one
+table, or an entire schema.
+
+Some constraints for columns:
+* `UNIQUE` --- prevents any duplicate values from being entered into that
+column.
+* `NOT NULL` --- when adding data to the table a value MUST be entered for that
+column; it cannot be left empty.
+* `DEFAULT [value]` --- if no value is set in this field when a record is created then
+the value given here will be set for it.
+
+Keys come into play once we have to set up relationships between different
+tables. They're also useful for keeping track of unique rows within a table.
+
+## View the Table ##
+
+* `\dt` --- show a list of all the tables, or relations, in the database.
+* `\d [table_name]`  --- show detailed information about the named table.
+
+## Schema and DCL ##
+
+Although we have used only one of SQL's sub-languages, DDL, to describe the
+schema thus far, parts of the schema are also controlled by the DCL (Data
+Control Language).
+
+DCL is concerned with controlling who is allowed to perform certain actions
+within a database, or in other words, with the security of a database. The
+security settings determined by DCL are also part of the database's schema.
+
+## Summary ##
+
+* Tables are created using the `CREATE TABLE` SQL command.
+* Table column definitions go between the parentheses of the table creation
+statement.
+* Table column definitions consist of a column name, data type, and optional
+constraints.
+* There are many different data types, and these can be used to restrict the
+data that can be input to a column.
+* Constraints can also be used on the data that is input to a particular
+column.
+* We can view a list of tables or the structures of a particular table in the
+`psql` console using meta-commands.
+* Although database schema is largely a DDL (Data Definition Language) concern,
+parts of it, such as access and permissions, are determined by DCL (Data
+Control Language).
+
+* `CREATE TABLE [name]()`
+* `\dt` --- shows the tables in the current database.
+* `\d [name]` --- shows the schema of the named table.
+
+It is common to use `char` instead of `varchar` when a text field is known to
+always have the same number of characters. In some RDBMSs, this confers
+performance advantages, but this is not the case in PostgreSQL.
+
+# Alter a Table #
+
+## Alter Table Syntax ##
+
+Existing tables can be altered with an `ALTER TABLE` statement. An
+`ALTER TABLE` statement is part of DDL, and is for altering a table **schema**
+only.
+
+The basic syntax is:
+```sql
+ALTER TABLE [name]
+    [stuff_to_change_goes_here]
+    [additional_arguments]
+```
+
+## Renaming a Table ##
+
+A table can be renamed using the `RENAME` clause and the `TO` clause:
+```sql
+ALTER TABLE [old_name]
+    RENAME TO [new_name]
+```
+
+## Renaming a Column ##
+
+```sql
+ALTER TABLE [table_name]
+    RENAME COLUMN [old_column_name] TO [new_column_name];
+```
+
+## Changing a Column's Datatype ##
+
+```sql
+ALTER TABLE [table_name]
+    ALTER COLUMN [column_name] TYPE [new_type];
+```
+
+## Adding a Constraint ##
+
+Constraints are different from the name and data type of a column in that
+constraints are optional and we can have none or many of them. Therefore, if we
+want to change the constraints on a column, it is not a matter of replacing but
+of adding or removing constraints.
+
+(Note: there is actually an `ALTER CONSTRAINT` clause that can be used to alter
+certain aspects of Foreign Key constraints, but most of the time we will want
+to add or remove constraints.)
+
+The syntax for adding a constraint can vary depending on the type of constraint
+we wish to add. Some types of constraint are considered 'table constraints'
+even when they are applied to a column rather than a table. Other types of
+constraint are considered 'column constraints'.
+
+The differences between table and column constraints are mainly syntactic. Some
+forms of the various commands let you specify table constraints while others
+require column constraints. While this can be important when writing a command,
+the two types of constraints have no appreciable differences.
+
+In general, `NOT NULL` is always a column constraint. The remaining
+constraints (`PRIMARY KEY`, `FOREIGN KEY`, `UNIQUE`, and `CHECK`) can be either
+table or column constraints.
+
+Since `NOT NULL` is always a column constraint, there is a special syntax for
+adding the constraint to an existing table:
+```sql
+ALTER TABLE [table_name]
+    ALTER COLUMN [column_name]
+    SET NOT NULL;
+```
+
+To add any other constraint to an existing table, you must use this syntax to
+add a table constraint:
+```sql
+ALTER TABLE [table_name]
+    ADD [[CONSTRAINT [constraint_name]]]
+    [constraint_clause];
+```
+The double brackets indicate that naming the constraint is optional.
+
+This second constraint syntax can apply to a single column, or to relationships
+between columns, depending on the constraint clause. It is complex and
+flexible. The first syntax is specific to setting `NOT NULL` on a single
+column.
+
+## Removing a Constraint ##
+
+For most types of constraint, the same syntax can be used to remove both column
+and table constraints:
+```sql
+ALTER TABLE [table_name]
+    DROP CONSTRAINT [constraint_name];
+```
+
+If we wish to remove a `DEFAULT` clause, which is technically not a constraint,
+the syntax is different:
+```sql
+ALTER TABLE [table_name]
+    ALTER COLUMN [column_name]
+    DROP DEFAULT;
+```
+
+## Adding a Column ##
+
+The syntax to add a new column to a table is:
+```sql
+ALTER TABLE [table_name]
+    ADD COLUMN [new_column_name] [data_type] [constraints, ...];
+```
+
+* `NOW()` is an SQL function. It provides the current data and time when it is
+called.
+
+There can be problems adding new columns with constraints. For instance, if we
+add a column to a table that contains existing rows of data with the constraint
+`NOT NULL`, we must provide a `DEFAULT` clause so that PostgreSQL is able to
+fill in the existing rows of the new column with a default value. Otherwise,
+the RDBMS would be unable to leave them blank (`NULL`) but would have no value
+to put there, and so the command would fail.
+
+## Removing a Column ##
+
+The syntax for removing a column is:
+```sql
+ALTER TABLE [table_name]
+    DROP COLUMN [column_name];
+```
+
+## Dropping Tables ##
+
+The syntax to delete a table is:
+```sql
+DROP TABLE [table_name];
+```
+
+Actions such as `DROP COLUMN` and `DROP TABLE` are not reversible. All data is
+permanently lost.
+
+## Summary ##
+
+This chapter covered:
+* Renaming a table
+* Renaming a column
+* Changing a column's data type
+* Adding a constraint
+* Removing a constraint
+* Adding a column
+* Removing a column
+* Dropping a table
+
+The book here gives a helpful table of actions and syntax. All except `DROP
+TABLE` use the starting clause `ALTER TABLE [table_name]`.
+
+## Exercises discursive material ##
+
+Most actions to alter a table can be combined into a single statement, but this
+is not possible with certain actions, including `RENAME`.
+
+* When converting data types, if there is no implicit conversion from the old
+type to the new type you need to add a `USING` clause to the statement, with an
+expression that specifies how to compute the new column value from the old.
+
+Some such expressions can be quite complex, but a simple form would be
+something like:
+```sql
+ALTER TABLE table_name
+    ALTER COLUMN column_name
+    TYPE new_data_type
+    USING column_name::new_data_type
+```
+
+* We can combine multiple actions into a single statement in various ways. One
+such is when we wish to perform more than one action involving `ALTER COLUMN`,
+e.g:
+```sql
+ALTER TABLE celebrities
+    ALTER COLUMN date_of_birth TYPE date
+        USING date_of_birth::date,
+    ALTER COLUMN date_of_birth SET NOT NULL;
+```
+Here we piggy-back off the same `ALTER TABLE` starting clause and separate our
+`ALTER COLUMN` clauses using a comma. Thus we can combine multiple,
+comma-separated `ALTER COLUMN` actions into one overall `ALTER TABLE`
+statement.
+
+
