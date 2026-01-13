@@ -646,4 +646,69 @@ Here we piggy-back off the same `ALTER TABLE` starting clause and separate our
 comma-separated `ALTER COLUMN` actions into one overall `ALTER TABLE`
 statement.
 
+# Inserting Data into a Table #
+
+## Data and DML ##
+
+DML (Data Manipulation Language) is a sub-language of SQL which incorporates
+the various keywords, clauses and syntax used to write Data Manipulation
+Statements.
+
+Data Manipulation Statements are used for accessing and manipulating data in
+the database. Data Manipulation Statements can be categorized into four
+different types:
+
+* `INSERT` statements --- these add new data into the database.
+* `SELECT` statements --- also referred to as queries, these retrieve existing
+data from database tables
+* `UPDATE` statements --- these update existing data in a database table.
+* `DELETE` statements --- these delete existing data from a database table.
+
+The actions performed by thesew four types of statement are sometimes also
+referrred to as CRUD operations.
+
+## A Bit About CRUD ##
+
+The four words for which the acronym CRUD stands are Create, Read, Update, and
+Delete. These four words are analogous to `INSERT`, `SELECT`, `UPDATE`, and
+`DELETE` statements, and we can think of these statements as performing their
+equivalent CRUD operations.
+
+Web applications whose main purpose is to provide an interface to perform these
+operations are often referred to as 'CRUD apps'.
+
+## Insertion Statement Syntax ##
+
+The general form of an `INSERT` statement is:
+```sql
+INSERT INTO table_name
+        (column1_name, column2_name, ...)
+    VALUES (data_for_column1, data_for_column2, ...);
+```
+
+When inserting data into a table, you may specify all the columns from the
+table, some of them, or none. Not specifying columns can sometimes lead to
+unexpected results, so it is generally better to specify which columns you want
+to insert data into.
+
+When specifying columns, for each column specified you must supply a value for
+it in the `VALUES` clause, or the command will fail with an error.
+
+If you don't specify a column for data insertion, then `NULL` or a default
+value will be added to the record you wish to store instead.
+
+## Adding Rows of Data ##
+
+### Rows ###
+
+If we think of columns as giving structure to our table, then we can think of
+rows (sometimes referred to as 'tuples') as actually containing the data. Each
+row in a table is an individual entity, which can perhaps be seen as the
+logical equivalent of a record, and has a corresponding value for each column
+in the table. The rows and columns work together. It is the intersection of the
+structure provided by our columns and the data in our rows that create the
+structured data that we need.
+
+
+
 
