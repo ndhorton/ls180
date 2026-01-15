@@ -709,6 +709,107 @@ in the table. The rows and columns work together. It is the intersection of the
 structure provided by our columns and the data in our rows that create the
 structured data that we need.
 
+### Adding a Single Row ###
 
+When inserting a row without specifying columns, we must match each value in
+the `VALUES` clause list to the corresponding column and its data type. If we
+wish to use default values, we must use the keyword `DEFAULT` **if** there are
+actual values in the list following. If we end the list prematurely, then all
+trailing columns in the row will be set to their default value, or `NULL` if
+there is no default.
 
+If we specify values, we need only provide the values for the specified columns
+and any others will be assigned to the default, or `NULL`.
+
+* **Command Tag** --- the keyword returned by PostgreSQL after successfully
+executing an SQL command other than `SELECT`. (`SELECT` returns the
+selected data.)
+
+* Object Identifiers (oid) --- used internally by PostgreSQL aas primary keys
+for various system tables.
+
+When we make an insertion into a table, the first number after the command tag
+is the `oid`. The second is the number of rows that have been inserted.
+
+### Adding Multiple Rows ###
+
+The syntax for inserting multiple rows is something like:
+```sql
+INSERT INTO table_name (column1, column2, ...)
+    VALUES (row1_value1, row1_value2, ...),
+           (row2_value1, row2_value2, ...),
+           ...
+           ... ;
+```
+
+When we add multiple rows, PostgreSQL inserts them in the order given.
+
+If we insert multiple rows in a single `INSERT` statement and any of those rows
+violate a constraint or data type, then as we might expect the entire statement
+fails with an error and no data rows are inserted. In this sense, inserting
+multiple rows in one statement is different to inserting one row per statement,
+since with separate statements, the well-formed statements will succeed and the
+invalid ones will not.
+
+## Constraints and Adding Data ##
+
+Although setting constraints is part of DDL, constraints are primarily concerned
+with controlling what data can be inserted into a table.
+
+### Default Values ###
+
+Setting a `DEFAULT` value for a column ensures that if a value is not specified
+for that column in an `INSERT` statement, then the default value will be used
+instead.
+
+### `NOT NULL` Constraints ###
+
+It doesn't always make sense for a column to have a default value. For example,
+when a column should always contain a name specific to a user; here, there is
+no such thing as a 'generic user name' that can be applied to multiple users.
+
+`NOT NULL` constraints can be used to ensure that when a new row is added, a
+value must be provided for that column.
+
+If our `INSERT` statement specifies both columns and values but we don't
+specify a particular column, SQL will try to insert `null` into that column by
+default. If we have a `NOT NULL` constraint on that column, then the command
+fails with an error.
+
+### Unique Constraints ###
+
+Sometimes, rather than simply ensuring that a column has a value in it, we want
+to ensure that the value added for that column is unique; to do this we can use
+a `UNIQUE` constraint.
+
+### `CHECK` Constraints ###
+
+Check constraints limit the type of data that can be included in a column based
+on some condition we set in the constraint. Each time a new record is in the
+process of being added to a table, that constraint is first *checked* to ensure
+that data being added conforms to it.
+
+* In SQL, `<>` is the 'not equal to' operator. In PostgreSQL specifically, `!=`
+is a valid alias for `<>`, but `<>` is the standard, portable SQL inequality
+operator. It is better to stick with `<>` for consistency across RDBMSs.
+
+* If we don't need a specific name for our check constraint, it is fine to
+leave the naming up to PostgreSQL.
+
+* In PostgreSQL, a string is denoted using single-quotes. If a string needs to
+actually contain single-quote characters, we escape them using a second
+single-quote, like `'Brian O''Leary'`.
+
+## Summary ##
+
+Important themes from this chapter:
+* `INSERT` statement syntax
+* Table rows
+* Adding a single row of data
+* Adding multiple rows of data
+* Various types of constraint we can use to control what data is needed
+    * `DEFAULT` values
+    * `NOT NULL` constraints
+    * `UNIQUE` constraints
+    * `CHECK` constraints
 
