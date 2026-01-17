@@ -813,3 +813,119 @@ Important themes from this chapter:
     * `UNIQUE` constraints
     * `CHECK` constraints
 
+* Generally, you want to avoid boolean columns being able to hold `NULL`
+values, since booleans, by their nature, should only have two states, `true`
+and `false`. Throwing `NULL` into the mix creates three possible states. This
+is sometimes called the Three State Boolean problem, or the Three Valued-logic
+problem.
+
+# Select Queries #
+
+Querying data forms the **Read** part of CRUD operations, and is arguably the
+most common operation in database-backed applications.
+
+## Select Query Syntax ##
+
+```sql
+SELECT column_name, ...
+    FROM table_name
+    WHERE condition;
+```
+
+We can list a number of column names separated by commas; we can also use a `*`
+widlcard. The table_name can be a real table, or a 'virtual' table generated in
+some way. The `WHERE` clause allows us to filter our data based on a condition.
+The condition will typically include one of the columns in the table you are
+querying.
+
+* The order of the columns int the response is the order that the column names
+are specified in our query, rather than the 'natural' order of the table
+columns.
+
+* SQL is not a case-sensitive language. Keywords are conventionally written in
+uppercase while identifiers are written in lowercase. It is generally a good
+idea to avoid naming an identifier something that is a reserved word in
+PostgreSQL. For instance, the word 'year' is actually a reserved word, and if
+we name a column `year`, this could cause problems in certain contexts. What
+you can do is to use double-quotes for the column `"year"`. PostgreSQL then
+knows to treat it as an identifier. But it is perhaps best to avoid naming
+clashes altogether.
+
+## Order By ##
+
+Another clause that we might use in a `SELECT` query is the `ORDER BY` clause.
+Rather than returning only certain rows, as `WHERE` does, `ORDER BY` displays
+the results of a query in a particular sort order.
+
+SQL allows returning sorted data by adding the `ORDER BY [column_name]` clause
+to a query. Adding this to our general syntax, we get:
+```sql
+SELECT column_name, ...
+    FROM table_name
+    WHERE condition
+    ORDER BY column_name, ...;
+```
+The `ORDER BY` clause comes after we have specified the table name. If our
+statement includes a `WHERE` clause, the `ORDER BY` clause comes after this
+also.
+
+* When ordering by boolean values, `false` comes before `true` in ascending
+order.
+* The sort of rows with an identical value is arbitrary.
+* We can specify ascending or descending order via the keywords `ASC` or `DESC`
+respectively. These keywords come after `ORDER BY [column_name]`. If omitted,
+the default is `ASC`.
+* As with a `WHERE` clause, we can `ORDER BY` a column even if we do not
+include it in our column list
+* We can set a sort direction for each column we are using to order our
+results.
+
+## Operators ##
+
+Operators are generally used as part of an expression in a `WHERE` clause (or a
+`CHECK` constraint).
+
+We can group operators into three different types:
+1. Comparison
+2. Logical
+3. String Matching
+
+We will only cover the most commonly used operators, since there are very many.
+
+### Comparison Operators ###
+
+These operators are used to compare one value to another. Often these values
+are numerical, but other data types can also be compared.
+
+Within the expression of a `WHERE` clause, the comparison operator is place in
+between the two things being compared; i.e. the column name and the specific
+value to be compared against the values in that column.
+
+The comparison operators are for the most part the same as for most programming
+languages except:
+* The equality operator is `=`, instead of `==` or `===`.
+* The inequality operator is `<>` instead of `!=` (though PostgreSQL allows
+`!=` as an alias particular to this specific RDBMS rather than SQL generally).
+
+There are also what are termed *comparison predicates*, which behave much like
+operators but have special syntax. Examples of comparison predicates include:
+* `BETWEEN`
+* `NOT BETWEEN`
+* `IS DISTINCT FROM`
+* `IS NOT DISTINCT FROM`
+* `IS NULL`
+* `IS NOT NULL`
+
+`NULL` is a special value in SQL which represents the absence of a value or an
+unknown value. On a practical level, this means that we cannot treat `NULL` as
+we would any other value.
+
+We cannot, for instance, have a `WHERE` clause in the form
+`WHERE some_column = NULL`. Instead we would use `IS NULL`, e.g.
+```sql
+SELECT * FROM my_table
+    WHERE my_column IS NULL;
+```
+
+### Logical Operators ###
+
