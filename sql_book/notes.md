@@ -929,3 +929,291 @@ SELECT * FROM my_table
 
 ### Logical Operators ###
 
+There are three logical operators:
+* `AND`
+* `OR`
+* `NOT`
+
+You can use parentheses to group sub-clauses together.
+
+### String Matching Operators ###
+
+String, or pattern, matching allows you to add flexibility by searching for a
+sub-set of the data within a column. As the name suggests, string matching only
+works with string data types.
+
+The most common string matching operators are:
+* `LIKE` --- works in combination with `%` and `_` characters to pattern match.
+* `ILIKE` --- case-insensitive `LIKE`.
+* `SIMILAR TO` --- compares string column to Regex pattern.
+
+The `%` character combined with `LIKE`/`ILIKE` serves as a wildcard. It means
+'zero or more occurences of any characters'.
+
+The `_` character combined with `LIKE`/`ILIKE` matches any single character.
+
+## Summary ##
+
+The `SELECT` statement is probably the most commonly used statement in SQL.
+
+* `ORDER BY column_name [ASC, DESC]`
+* `WHERE column_name [>,<,>=,<=,=,<>] value`
+* `WHERE expression1 [AND,OR] expresson2`
+* `WHERE string_column LIKE '%substring'`
+
+The expression in a `CHECK` constraint evaluates to `true` or `false` for each
+row, just like a `WHERE` condition does, so any operator that can be used in a
+`WHERE` clause can be also be used in a `CHECK` constraint, even operators like
+`LIKE`, `ILIKE`, and `SIMILAR TO`.
+
+* You should essentially always add the `NOT NULL` constraint to boolean
+columns.
+
+# More on Select #
+
+## `LIMIT` and `OFFSET` ##
+
+When working with large datasets, it is common to only want to display one
+portion of the result data at a time. Displaying portions of data as separate
+'pages' is a user interface pattern used in many web applications, generally
+referred to as 'pagination'.
+
+The `LIMIT` and `OFFSET` clauses of `SELECT` are the base on which pagination
+is built.
+
+```sql
+SELECT [column_list]
+    FROM [table_name]
+    LIMIT [N1]
+    OFFSET [N2]
+```
+
+N1 represents the number of rows to return. N2 represents how many rows to skip
+before returning N1 rows.
+
+As well as pagination, `LIMIT` is useful during development when we wish to get
+a sense of the data in the table without returning the entire, potentially very
+big, dataset.
+
+When doing pagination, it is important to use `ORDER BY` so that rows are
+returned in some kind of deterministic order. The 'natural' order of table rows
+is **not guaranteed**, and is an implementation detail. The 'natural' order may
+change between queries for a multitude of reasons, and so when we are
+paginating, we want to return page 1, 2, etc, of a stable, ordered collection.
+
+* If you are using `LIMIT` and `OFFSET`, your query should include `ORDER BY`.
+With respect to pagination, a stable and deterministic order of rows is what
+makes the concept of 'pages' meaningful in that it makes pages actually
+sequential.
+
+## `DISTINCT` ##
+
+Sometimes duplicate data is unavoidable. For example, we might get duplication
+when joining more than one table together. One way to formulate queries to deal
+with duplication is to use the `DISTINCT` clause.
+
+```sql
+SELECT DISTINCT column_name FROM table_name;
+```
+but also with functions, like:
+```sql
+SELECT count(DISTINCT column_name) FROM table_name;
+```
+
+## Functions ##
+
+Functions are a way of working with data in SQL. The set of available functions
+are provided by the RDBMS, and perform operations on fields or data. Some
+functions provide data transformations that can be applied before returning
+results. Others simply return information on the operations carried out.
+
+These functions can generally be grouped into different types. Some of the most
+commonly used types of functions are:
+1. String
+2. Date/Time
+3. Aggregate
+
+### String Functions ###
+
+String Functions perform some sort of operation on values whose data type is
+String. Some examples:
+* `length()` --- returns the length of the string
+* `trim()` --- trims strings in a user-specified way
+
+### Date/Time Functions ###
+
+Date/time functions, for the most part, perform operations on date and time
+data. Many of the date/time functions take time or timestamp inputs:
+* `date_part()` --- extracts only the part of a given timestamp that we want,
+such as `'year'`
+* `age()` --- when passed a single `timestamp` as an argument, calculates the
+time elapsed between that timestamp and the current time.
+
+### Aggregate Functions ###
+
+Aggregate functions perform aggregation; they compute a single ressult from a
+set of input values. For instance:
+* `count()` --- returns the number of values in the column passed as argument
+* `sum()` --- sums numeric type values for all of the selected rows and returns
+the total.
+* `min()` --- returns the lowest value in a column for all of the selected
+rows. Can be used with various data types such as numeric, date/time, and
+string.
+* `max()` --- the opposite of `min()`.
+* `avg()` --- returns the average (arithmetic mean) of numeric type values for
+all of the selected rows.
+
+Aggregate functions really start to be useful when grouping table rows
+together. The way we do that is by using the `GROUP BY` clause.
+
+## `GROUP BY` ##
+
+`GROUP BY` can partition rows based on a column.
+
+One thing to be aware of when using aggregate functions and `GROUP BY`, is that
+if you include columns in the column list alongside the function, then those
+columns **must** also be included in a `GROUP BY` clause.
+
+The PostgreSQL docs say:
+> When `GROUP BY` is present, or any aggregate functions are present, it is not
+valid for the `SELECT` list expressions to refer to ungrouped columns except
+within aggregate functions or when the ungrouped column is functionally
+dependent on the grouped columns, since there would otherwise be more than one
+possible value to return for an ungrouped column. A functional dependency
+exists if the grouped columns (or a subset thereof) are the primary key of the
+table containing the ungrouped columns.
+
+All of the columns in the select list must either be included in the `GROUP BY`
+clause, be the result of an aggregate function, or the `GROUP BY` clause must
+be based on the primary key. This requirement ensures that there is a single
+value for every column in the result set.
+
+Essentially, `GROUP BY` is needed to give a meaningful grouping key, and only
+such keys can be present alongside aggregate functions in a select list.
+
+## Medium article on `GROUP BY` ##
+
+### What does `GROUP BY` do? ###
+
+The `GROUP BY` clause makes groups of rows where values in the specified
+columns are the same. Those groups are then used in the final output of the
+query.
+
+In the results, a row can contain values from grouped columns and ungrouped
+columns which belong to the same group. It is important to note that the output
+can only contain one value for each column in the group. The value for a
+grouped column will be the shared value of each row in the group. The value for
+an ungrouped column will be the single value that is the result of
+*aggregating* all of the values in the column within the group.
+
+An aggregate function is simply a function which takes multiple values,
+performs some operation on them, and then produces a single value as a
+result. This is exactly what is needed if we want to include some information
+from an ungrouped column in the output of a data set that has been grouped with
+`GROUP BY`. That way, wherever there is a group of rows, and some rows have
+multiple different values in a column, those different values can be combined
+in some way to form a single value for that group.
+
+* `string_agg(column_name, delimiter)` --- concatenates all of the string
+values separated by the delimiter of all of the rows in the specified column in
+the group.
+
+In a sense, the grouped column has its values aggregated to a single
+representative value (representative because equal under the standard rules for
+equality for that data type).
+
+### The `HAVING` Clause ###
+
+Aggregate functions are not valid in `WHERE` clauses. The `HAVING` clause
+filters groups by comparing them to a conditional statement. If the comparison
+returns `true`, the group is included in the results, otherwise the group is
+not included.
+
+### Functional Dependency ###
+
+If we `GROUP BY` the Primary Key of the table, we can include any column in the
+select list, since by definition, each value of the Primary Key column is
+unique and not null, and so the groups formed by this will have one row only.
+
+This doesn't work for a column whose row values merely *happen to be* unique.
+There is no *functional dependency*, and so we do not have a general rule to
+guarantee that for each result row, there will be a unique value that can be
+found for each column. In fact, even if there is a unique constraint on the
+column, this is not enough to satify the concept of functional dependency: the
+grouped column must be the Primary Key.
+
+## Summary ##
+
+* Returning portions of a dataset using `LIMIT` and `OFFSET`
+* Returning unique values using `DISTINCT`
+* Using SQL functions to work with data in various ways
+* Aggregating data using `GROUP BY`
+
+# Update Data in a Table #
+
+## Updating Data ##
+
+An `UPDATE` statement can be written with the following syntax:
+```sql
+UPDATE table_name
+    SET column_name = value, ...
+    WHERE expression;
+```
+The ellipsis indicates that you can specify multiple `column_name = value`
+entries.
+
+If we omit the `WHERE` clause, PostgreSQL will update that column to that value
+for *every* row in the table, which is rarely what we want. Even if we have a
+`WHERE` clause, we must be certain that it is specific enough to target only
+those rows we wish to update. Therefore, it is a good idea to first test the
+condition in a `SELECT` statement for a read-only trial run.
+
+## Deleting Data ##
+
+The `DELETE` statement is used to remove entire rows from a database table.
+
+The syntax of a `DELETE` statement is somewhat similar to `UPDATE`:
+```sql
+DELETE FROM table_name
+    WHERE expression;
+```
+
+As with `UPDATE`, the `WHERE` clause in a `DELETE` statement is used to target
+specific rows.
+
+In the rare circumstance that we want to delete all data rows from a table, we
+would simply leave out the `WHERE` clause:
+```sql
+DELETE FROM table_name;
+```
+
+## Update vs Delete ##
+
+One key difference to keep in mind between how `UPDATE` works and how `DELETE`
+works is that `UPDATE` can target one or more columns in one or more rows by
+using the `SET` clause, whereas `DELETE` targets one or more *entire* rows. 
+
+If we wish to 'delete' specific values from within a row, we would approximate
+this by updating values to `NULL`:
+
+```sql
+UPDATE table_name
+    SET column_name = NULL
+    WHERE expression;
+```
+* Unlike with a `WHERE` clause, with a `SET` clause we can use `=` with `NULL`
+since it is not being used as a comparison operator in this situation.
+* If a column has a `NOT NULL` constraint, then it's not possible to set its
+value to `NULL`. An error will be thrown.
+
+## Use Caution ##
+
+Remember that most of the time you do not want to delete or update *all* the
+rows in a table. So you should always be alert to the necessity of a `WHERE`
+clause for the vast majority of `UPDATE` or `DELETE` statements.
+
+Even if you are using a `WHERE` clause, be sure to test the clause first with a
+query.
+
+
+
