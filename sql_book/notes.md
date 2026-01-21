@@ -1215,5 +1215,278 @@ clause for the vast majority of `UPDATE` or `DELETE` statements.
 Even if you are using a `WHERE` clause, be sure to test the clause first with a
 query.
 
+* Note that although in PostgreSQL boolean values display as `t` or `f` in the
+results of a `SELECT` query, `t` and `f` are not valid literal boolean values
+unless used in single quote marks: `'t'`, `'f'`. Other acceptable literals are
+`true` or `false` without quote marks; or `'t'`, `'true'`, `'y'`, `'yes'`,
+`'on'` and `'1'` with quote marks for `true`; and `'f'`, `'false'`, `'n'`,
+`'no'`, `'off'` and `'0'` with quote marks for `false`.
+
+# Table Relationships #
+
+## Normalization ##
+
+There would be several problems with using only a single table for a real-world
+application.
+
+The first is duplication. Say we are tracking orders. A new order would mean a
+new row in the table to track various fields associated with an order. Yet
+because we only have a single table, this means that all of the user data needs
+to be repeated in the columns associated with the user placing the order, whose
+data has already been entered into the system.
+
+This duplication leads on to another problem: data integrity. If we have the
+same user data repeated in many different rows, discrepencies might arise; at
+this point we have no single source of truth to determine which, e.g., phone
+number is the correct one.
+
+To deal with this, we could split up our data --- relating to users, orders,
+whatever other entities we need to track --- across multiple different tables,
+and create relationships between them. The process of splitting up data in this
+way to remove duplication and improve data integrity is known as
+*normalization*.
+
+There are complex sets of rules which dictate the extent to which a database is
+judged to be *normalized*. These rule-sets are known as 'normal forms'.
+
+* The reason for normalization is to reduce data redundancy and improve data
+integrity.
+* The mechanism for carrying out normalization is arranging data in multiple
+tables and defining relationships between them.
+
+## Database Design ##
+
+At a high level, the process of database design involves defining **entities**
+to represent different sorts of data and designing **relationships** between
+those entities.
+
+### Entities ###
+
+An entity represents a real world object, or a set of data that we want to
+model within our database; we can often identify these as the major nouns of
+the system we are modelling.
+
+Although entities are sometimes equated with tables, in a production
+application, an entity may have its associated attributes distributed across
+more than one table.
+
+### Relationships ###
+
+In the design process, we might draw an abstract diagram of entities and the
+logical relationships between them. In database design, such a diagram is known
+as an **ERD**, or **Entity Relationship Diagram**.
+
+There are various types of ERD ranging from conceptual to detailed, and often
+using specific conventions such as **crow's foot notation** to model
+relationships.
+
+## Keys ##
+
+The implementation of the relationships between tables in the table schema is
+achieved through the use of *keys*.
+
+Keys are a special type of constraint used to establish relationships and
+uniqueness. They can be used *to identify a specific row in the current table*,
+or *to refer to a specific row in another table*. These roles are fulfilled by
+**Primary Keys** and **Foreign Keys**.
+
+### Primary Keys ###
+
+A necessary part of establishing relationships between two entities or two
+pieces of data is being able to identify the *data* correctly. In SQL, uniquely
+identifying data is critical. In SQL, uniquely identifying data is critical.
+
+* A Primary Key is a unique identifier for a row of data.
+
+Making a column a Primary Key includes the constraints that the column be
+`UNIQUE` and `NOT NULL`.
+
+We add a Primary Key constraint in a similar fashion to other constraints:
+```sql
+ALTER TABLE table_name
+    ADD PRIMARY KEY (column_name);
+```
+
+Although any column in a table can have `UNIQUE` and `NOT NULL` constraints, we
+can only have one Primary Key per table. It is common practice for that column
+to be named `id`.
+
+### Foreign Keys ###
+
+Foreign Keys are partners to Primary Keys in defining relationships between
+tables.
+
+A Foreign Key allows us to associate a row in one table to a row in another
+table. This is done by setting a column in one table as a Foreign Key and
+having that column reference another table's Primary Key column. Creating this
+relationship is done using the `REFERENCES` keyword in this syntactic form:
+```sql
+FOREIGN KEY (fk_col_name)
+    REFERENCES target_table_name (pk_col_name);
+```
+
+In general terms, we can think of this reference as creating a connection
+between rows in different tables. Setting up a relation between a Foreign Key
+column of one table and the Primary Key of a column in another table ensures
+the *referential integrity* of the database.
+
+Referential integrity guarantees that a given foreign key value references an
+existing record in the target table; if it doesn't, an error occurs. In other
+words, PostgreSQL won't let you add a value to the Foreign Key column of a
+table if the Primary Key column of the target table doesn't already have that
+value.
+
+So essentially, the Foreign Key constraint on a column references the Primary
+Key column of another table. This constraint means that a value entered into
+a row of the Foreign Key column *must* be a value that already exists in the
+Primary Key. The nature of the Primary Key constraint is that it guarentees
+each row in that table has a unique value in its Primary Key column, which
+uniquely identifies that row. So each value in the associated Foreign Key
+column in the other table effectively acts as a pointer to an existing row of
+the parent table.
+
+The referential integrity of the database is enforced by the RDBMS blocking
+`INSERT` and `UPDATE` statements that try to add a value to the Foreign Key
+column that doesn't already exist in the corresponding Primary Key column of
+the parent table. Similarly, the RDBMS blocks `UPDATE` and `DELETE` statements
+that remove or change a value from the Primary Key column of the parent table
+that is currently being referenced from the Foreign Key column of the child
+table. This ensures that a value in the Foreign Key column must reference the
+same value in the Primary Key table, and no reference in the Foreign Key table
+can be left 'dangling'.
+
+The specific way in which a Foreign Key is used as part of a table's schema
+depends on the type of relationship we want to define between our tables. In
+order to implement that schema correctly it is useful to formally describe the
+relationships we need to model between our entities.
+
+Entity relationships can be classified into three relationship types:
+* one-to-one
+* one-to-many
+* many-to-many
+
+## One-to-One ##
+
+A one-to-one relationship between two entities exists when a particular entity
+instance exists in one table, and it can only have one associated entity
+instance in another table.
+
+This sort of relationship is implemented by having the `PRIMARY KEY` of one
+table be both the `FOREIGN KEY` *and* `PRIMARY KEY` of the other table.
+
+### Example ###
+
+> Say we have a table `users` and a table `addresses`.
+>
+> The Primary Key of `users` is the `id` column. This means that each user has a
+unique `id`, and each value of `id` uniquely identifies a row of `users`, which
+represents a single user.
+>
+> We then create a table called `addresses` with a column `user_id` which we set
+to be both the Primary Key of `addresses` and also a Foreign Key that
+references the `id` column of `users`.
+>
+> Since the `users.id` column is the target of the Foreign Key column
+`addresses.users_id`, this means that each row of `addresses.user_id` must have
+a value that already exists in `users.id`, and that therefore each address must
+belong to a user. If the `user_id` column were *only* a Foreign Key, this would
+not establish a one-to-one connection. We might, for instance, have every row
+of `addresses.user_id` point to the same row of `users.id`.
+>
+> However, the `user_id` column of `addresses` is also the Primary Key of the
+`addresses` table, which means that each value therein must be unique. This is
+what establishes the one-to-one connection. Each value of `users.id` must be
+unique, and each value of `addresses.user_id` must reference an existing value
+of `users.id` *and* be unique within the `addresses.user_id` column.
+> Each user can therefore only have one address, and each address must have
+exactly one user, which is a one-to-one relationship.
+
+## Referential Integrity ##
+
+The one-to-one relationship we established in the previous example is such that
+we can add a user without an address, but we cannot add an address without
+exactly one user. That directionality of the relationship is called the
+*modality* of the entity relationship.
+
+### The `ON DELETE` Clause ###
+
+If we add an `ON DELETE` clause to a Foreign Key constraint, and set it to
+`CASCADE` (`ON DELETE CASCADE`), this means that if the row being referenced is
+delete, then the row referencing it will automatically be deleted. There are
+alternatives to `CASCADE`, such as `SET NULL` or `SET DEFAULT` which instead of
+deleting the referencing row will set a new value in the appropriate column for
+that row.
+
+Determining what to do in situations where you delete a row that is referenced
+by another row is an important design decision. It has a direct impact on
+maintaining referential integrity. If we don't set such clauses, we leave the
+decision of what to do up to the RDBMS we are using. In the case of PostgreSQL,
+if we try to delete a row that is referenced by a row in another table and we
+have no `ON DELETE` clause for that reference, PostgreSQL throws an error.
+
+Without an `ON DELETE` clause, our app must be sure always to delete the child
+row before deleting the parent row. And even if our app is initially written
+with this in mind, it is easy for this situation to cause problems over time.
+
+If there is no automated deletion, subsequent developers may encounter Foreign
+Key errors, and relax or bypass constraints in frustration. This can lead to
+orphaned child rows with dangling references to deleted parents, compromising
+data integrity. Ensuring referential integrity, making sure that there is an
+automated way of preventing dangling references, is an important safeguard
+against the deterioration of data integrity.
+
+## One-to-Many ##
+
+A one-to-many relationship exists between two entities if an entity instance in
+one of the tables can be associated with multiple records (entity instances) in
+the other table. The opposite relationship does not exist; this is, each entity
+instance in the second table can only be associated with one entity instance in
+the first table.
+
+We achieve this by setting a Foreign Key in the child table to reference the
+Primary Key of the parent table. The Primary Key of the child table is not the
+same as the Foreign Key column, and the Foreign Key column is not set to be
+unique.
+
+This way, the same `id` from the parent table can appear as many times as we
+like in the Foreign Key column of the child table, thus establishing a
+one-to-many relationship.
+
+* Generally, we want to ensure that the Foreign Key of the child table has a
+`NOT NULL` constraint set.
+
+With a one-to-many relationship, the order in which we add data to the related
+tables is important. A value that we insert into the Foreign Key of the child
+table must already exist in the referenced column of the parent table.
+
+## Many-to-Many ##
+
+A many-to-many relationship exists between two entities if for one entity
+instance there may be multiple records in the other table, and vice versa.
+
+There isn't a way to implement a many-to-many relationship between two tables
+directly. Instead, we break apart this many-to-many relationship into two
+one-to-many relationships using a third, cross-reference table (also known as a
+**join table**). This table holds the relationship between the two entities by
+having **two** Foreign Keys, each of which references the Primary Key of one of
+the tables between which we want to create this relationship.
+
+* As with one-to-many relationships, the foreign keys in many-to-many
+relationships should not allow `NULL` entries.
+
+## Summary ##
+
+* Normalization, and how this is used to reduce redundancy and improve data
+integrity within a database.
+* ERDs and how these diagrams allow us to model the relationships between
+different entities.
+* How Primary Keys and Foreign Keys work together to create the relationships
+between different tables.
+* The different types of relationships that can exist between tables and how to
+implement these with SQL.
+
+* one-to-one
+* one-to-many
+* many-to-many
 
 
