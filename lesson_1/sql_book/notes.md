@@ -1489,4 +1489,211 @@ implement these with SQL.
 * one-to-many
 * many-to-many
 
+# SQL Joins #
+
+Normalization often distributes all the information we might wish to access at
+once across several tables. In order to gather the information we might want
+from a query from more than one table, we can use a `JOIN` before selecting the
+data we need.
+
+## What is an SQL Join? ##
+
+SQL handles queries across more than one table through the use of `JOIN`s.
+`JOIN`s are clauses in SQL statments that link two tables together, usually
+based on the keys that define the relationship between those two tables.
+
+There are several types of `JOIN`s: `INNER`, `LEFT OUTER`, `RIGHT OUTER`,
+`FULL OUTER`, and `CROSS`.
+
+```sql
+SELECT table_nameN.column_name, ...
+    FROM table_name1
+    join_type JOIN table_name2
+        ON join_condition;
+```
+We can provide any number of columns with the `table_nameN.column_name` format.
+
+To join one table to another, PostgreSQL needs to know several pieces of
+information:
+* The name of the first table to join
+* The type of join to use
+* The name of the second table to join
+* The join condition
+
+These pieces of information are combined together using the `JOIN` and `ON`
+keywords. The part of the statment that comes after the `ON` keyword is the
+*join condition*; this defines the logic by which a row in one table is joined
+to a row in another table. In most cases, this join condition is created using
+the primary key of one table and the foreign key of the table we want to join
+it with.
+
+The join creates a transient table in memory called a *join table*. Note that
+the concept of a 'transient table' is a mental model, not a standard term.
+
+After the rows of the transient table are created, the first part of our query
+is used to select the requested columns from it. These columns can be
+originally from either table, so we must specify the table before the column in
+the format `table_name.column_name`.
+
+## Types of Joins ##
+
+A `JOIN` clause can come in many forms. To specify which type, you can add
+either `INNER`, `LEFT`, `RIGHT`, `FULL`, or `CROSS` just before the keyword
+`JOIN`.
+
+### `INNER JOIN` ###
+
+An `INNER JOIN` returns a result set that contains the common elements of the
+tables, i.e. the intersection where they match on the joined condition.
+
+In PostgreSQL, `INNER JOIN` is the default type when no specific type of join
+is specified before the `JOIN` keyword.
+
+### `LEFT JOIN` ###
+
+A `LEFT JOIN`, or `LEFT OUTER JOIN`, takes all the rows from one table, defined
+as the `LEFT` table, and joins it with a second table. The `JOIN` is based on
+the conditions supplied in the `ON` clause. A `LEFT` join will always include
+all the rows from the `LEFT` table, even if there are no matching rows in the
+table it is joined with. When there is no match, the corresponding columns will
+use `NULL` to represent the missing values from the second table.
+
+Note that, semantically, the syntax `LEFT JOIN` and `LEFT OUTER JOIN` are
+interchangeable.
+
+### `RIGHT JOIN` ###
+
+A `RIGHT JOIN`, or `RIGHT OUTER JOIN`, is similar to a `LEFT JOIN` except that
+the roles are reversed, and all the rows on the second table are included in
+the transient table with any matching rows from the first table.
+
+### `FULL JOIN` ###
+
+A `FULL JOIN`, or `FULL OUTER JOIN`, is essentially a combination of
+`LEFT JOIN` and `RIGHT JOIN`. This type of join contains all of the rows from
+both tables. Where the join condition is met, the rows of the two tables are
+joined. For any rows on either side of the join where the join condition is not
+met, the columns for the other table have `NULL` values for that row.
+
+A `FULL JOIN` is less common than the other types of join seen thus far.
+
+### `CROSS JOIN` ###
+
+A `CROSS JOIN`, also known as a Cartesian Join, returns all rows from one table
+crossed with every row from the second table. In other words, the join table of
+a cross join contains every possible combination of rows from the tables that
+have been joined. Since it returns all combinatins, a `CROSS JOIN` does not
+need to match rows using a join condition, and therefore it does not have an
+`ON` clause.
+
+If table A has N rows, and table B has M rows, then the cross join table will
+have N * M rows. The join table is the Cartesian product of the two joined
+tables.
+
+It is unusual to see a `CROSS JOIN` in production.
+
+A `CROSS JOIN` is the same as an `INNER JOIN` where the `ON` condition is
+always true, e.g. `ON TRUE`.
+
+## Multiple Joins ##
+
+It is common to join more than just two tables together. This is done by adding
+additional `JOIN` clauses to your `SELECT` statement. To join multiple tables
+in this way, there must be a logical relationship between the tables involved.
+
+When you perform a `JOIN` between two tables, PostgreSQL creates a **transient
+table** that contains data from both the original table and the table
+identified by the `JOIN`. It's convenient to think of this transient table as
+containing all columns in the `FROM` table as well as all columns from the
+`JOIN` table. (Before PostgreSQL displays the results, it picks out just the
+columns that you've mentioned in the `SELECT` statement.)
+
+If you add a second `JOIN` clause, PostgreSQL creates yet another transient
+table that contains all of the columns from the previous transient table as
+well as all the columns from the matching rows in the second `JOIN` table. Note
+that we're not referring back to the `FROM` table here --- we're only working
+with the transient table produced from the previous join, and the new table to
+be joined. So we don't need to reference the `FROM` table again.
+
+A third and fourth `JOIN` acts in the same way --- each works with the previous
+transient table and adds data from matching rows in the `JOIN` tables.
+
+## Aliasing ##
+
+### Table aliasing ###
+
+Aliasing allows us to specify another name for a column or table and use it
+throughout a query to allow for more concise syntax. For example, making use of
+the `AS` clause:
+```sql
+SELECT u.full_name, b.title, c.checkout_date
+    FROM users AS u
+    INNER JOIN checkouts AS c
+        ON u.id = c.user_id
+    INNER JOIN books AS b
+        ON b.id = c.book_id;
+```
+This pattern is commonly referred to as 'table aliasing'.
+
+We can even use a shorthand for aliasing by leaving out the `AS` keyword
+entirely. `FROM users u` and `FROM users AS u` are equivalent SQL clauses.
+
+### Column Aliasing ###
+
+Aliasing isn't just useful for shortening SQL queries. We can also use it to
+display more meaningful column headings in our result table. For instance, if
+we want to display the number of checkouts from the library we could write
+something like:
+```sql
+SELECT count(id) AS "Number of Books Checkout Out"
+    FROM checkouts;
+```
+
+## Self Joins ##
+
+It is actually possible to create a join between a table and itself. This is
+called a *self join*.
+
+In order to do this, we **must** use table aliases. For the same table to be
+used as both `FROM` table and `JOIN` table in th `ON` condition, the SQL
+language requires us to have two different ways of referring to it, and this is
+provided by aliases.
+
+We give the same table two different aliases and then create a join between the
+aliases:
+```sql
+SELECT f1.first_name AS "Child First",
+    f1.last_name AS "Child Last",
+    f2.first_name AS "Parent First",
+    f2.last_name AS "Parent Last",
+FROM families f1
+JOIN families f2 ON f1.parent_id = f2.id;
+```
+
+This works just like a join between two different tables, and we can use any
+sort of join, not just `INNER`. The difference is that we are looking for
+relationships between rows in the same table.
+
+Self joins are not used very often.
+
+## Subqueries ##
+
+Many of the results that can be obtained through `JOIN`s can also be achieved
+through subqueries.
+
+If we execute a `SELECT` query, and the use the results of that `SELECT` query
+as a condition in another `SELECT` query, we call this **nesting**, and the
+query that is nested is called a **subquery**.
+
+PostgreSQL provides a number of expressions that can be used specifically with
+sub-queries, such as `IN`, `NOT IN`, `ANY`, `SOME`, and `ALL`. These all work
+slightly differently, but they all essentially compare values to the results of
+a subquery.
+
+### Subqueries vs Joins ###
+
+When creating queries that return the same result, a differentiator between
+them may be their performance when compared to each other. As a general rule,
+`JOIN`s are faster than subqueries. This is something to bear in mind when
+working with large datasets.
 
