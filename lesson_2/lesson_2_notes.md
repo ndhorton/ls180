@@ -319,4 +319,60 @@ how it should execute a query.
 
 ## How PostgreSQL Executes a Query ##
 
+While the exact way that a PostgreSQL database server will execute a query will
+depend on many variables, there is a high-level process that each query goes
+through.
 
+The process described here relates to `SELECT` queries. Other types of SQL
+statement use many of the same steps, but are almost always less complex than
+`SELECT` queries.
+
+1. Rows are collected into a **virtual derived table**
+
+We can think of this step as the database creating a new temporary table using
+the data from all the tables listed in the query's `FROM` clause, including
+tables that are used in `JOIN` clauses.
+
+NB: this virtual derived table is different from the 'transient tables' used as
+a model in the SQL book.
+
+2. Rows are filtered using `WHERE` conditions
+
+All the conditions in the `WHERE` clause are evaluated for each row, ande those
+that don't meet these requirements are removed.
+
+3. Rows are divided into groups
+
+If the query includes a `GROUP BY` clause, the remaining rows are divided into
+the appropriate groups.
+
+4. Groups are filtered using `HAVING` conditions
+
+`HAVING` conditions are very similar to `WHERE` conditions, only they are
+applied to the values that are used to create groups and not individual rows.
+This means that a column that is mentioned in a `HAVING` clause should almost
+always appear in a `GROUP BY` clause and/or an aggregate function in the same
+query. Both `GROUP BY` and aggregate functions perform grouping, and the
+`HAVING` clause is used to filter that aggregated/grouped data.
+
+5. Compute values to return using select list
+
+Each element in the select list is evaluated, including any functions, and the
+resulting values are associated with the name of the column they are from or the
+name of the last function evaulated, unless a different name is specified in the
+query with `AS`.
+
+6. Sort results
+
+The result set is sorted as specified in the `ORDER BY` clause. Without this
+clause, the results are returned in an order that is the result of how the
+database executed the query and the rows' order in the original tables. It's
+best to always specify an explicit order if your application relies on rows
+being returned in a specific order.
+
+7. Limit results
+
+If `LIMIT` or `OFFSET` clauses are included in the query, these are used to
+adjust which rows in the result set are returned.
+
+# 2:14 Table and Column Aliases #
