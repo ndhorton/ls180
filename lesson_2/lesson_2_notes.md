@@ -186,3 +186,137 @@ The `::` operator casts the value on the left to the type on the right.
 The `column BETWEEN value1 AND value2` comparison predicate is equivalent to
 `column >= value1 AND column <= value2`.
 
+# Using Keys #
+
+It is entirely possible to have identical rows of data that represent different
+real-world entities appear in the same table.
+
+## Solving the Problem: Keys ##
+
+Keys allow us to stop using values within the data itself to identify rows. Or
+at least, stop using values that have not been carefully selected to be unique
+across the entire dataset.
+
+A **key** uniquely identifies a single row in a database table. There are two
+types of key to focus on here:
+* Natural keys
+* Surrogate keys
+
+## Natural Keys ##
+
+A **natural key** is an existing value in a dataset that can be used to uniquely
+identify each row of data in that dataset.
+
+In reality, most values that *seem* like they are good candidates for natural
+keys turn out not to be.
+
+There are a variety of solutions to this problem, including using more than one
+existing value as a **composite key**. But instead of solving the problems
+associated with natural keys, this will often just defer the problem until later
+without actually addressing it.
+
+## Surrogate Keys ##
+
+A **surrogate key** is a value that is created solely for the purpose of
+identifying solely for the purpose of identifying a row of data in a database
+table.
+
+Perhaps the most common surrogate key in use today is an auto-incrementing
+integer. This is a value that is added to each row in a table as it is created.
+With each row, this value increases in order to remain unique in each row.
+
+The **serial** type in PostgreSQL is actually a short-hand for a definition that
+is much longer:
+```sql
+-- This statement:
+CREATE TABLE colors(id serial, name text);
+
+-- is actually interpreted as if it were this one:
+CREATE SEQUENCE colors_id_seq;
+CREATE TABLE colors (
+    id integer NOT NULL DEFAULT nextval('colors_id_seq'),
+    name text
+);
+```
+
+A **sequence** is a special kind of relation that generates a series of numbers.
+A sequence will remember the last number it generated, so it will generate
+numbers in a predetermined sequence automatically.
+
+The next value of a sequence is accessed using `nextval()`, and can be done in
+any SQL statement.
+
+Once a number is returned by `nextval` for a standard sequence, it will not be
+returned again, regardless of whether the value was stored in a row or not.
+
+### Enforcing Uniqueness ###
+
+It is a requirement of a surrogate key, or any sort of key, that the value in
+each row be unique. If there are duplicate values, then that column stops being
+a unique identifier for each row.
+
+## Primary Keys ##
+
+Using the Primary Key constraint implicitly imposes the `UNIQUE` and `NOT NULL`
+constraints. However, using `PRIMARY KEY` instead expresses the intent that we
+wish the column to be not merely `UNIQUE` and `NOT NULL` but also the main
+unique identifier for a given table. Part of this is that we can have only one
+Primary Key per table. But it also acts as documentation and expression of
+intent, for other developers and ourselves at a later date. Specifying a column
+as Primary Key means that the guarantee that it can be used as unique identifier
+for each row is baked into the database's schema.
+
+Many ORMs (including ActiveRecord) make the assumption that the unique
+identifier for each row will be a column with a Primary Key constraint. Admin
+tools, codegen, and migration tools often make the same assumption.
+
+Contemporary database development within the Ruby, JavaScript, and other
+language communities has settled on the following conventions for working with
+tables and primary keys:
+1. All tables should have a primary key column called `id`.
+2. The `id` column should automatically be set to a unique value as new rows are
+inserted into the table.
+3. The `id` column will often be an integer, but there are other data types
+(such as UUIDs) that can provide specific benefits.
+
+> What is a UUID?
+> UUIDs (or *universally unique identifiers*) are vary large numbers that are
+used to identify individual objects or, when working with a database, rows in a
+database. There are a few formats and different ways to generate these numbers
+(they don't increment by `1` as we've been doing). UUIDs are often represented
+using hexadecimal strings with dashes. Although they are represented this way,
+each UUID is simply a 128-bit number.
+
+UUIDs are large enough that any randomly-generated UUID will be, in practice,
+unique from all other UUIDs.
+
+# 2:13 How PostgreSQL Executes Queries #
+
+## A Declarative Language ##
+
+SQL is a declarative language. A SQL statement describes *what* to do, but not
+*how* to do it. It is up to the PostgreSQL server to take each query, determine
+how best to execute it, and return the desired results.
+
+The benefit of this approach is that it vastly simplifies database interactions
+for the user. Databases can perform involved data manipulations with the use of
+just a few SQL terms, freeing the user to think at a higher level about what
+data they want returned and in what format.
+
+The downside to this automated approach is that some of the time, the database
+will choose to do something in an inefficient way. This happens because the only
+way to know for sure how long a particular query plan will take to execute is to
+execute it. The estimates that are generated as a part of the query plan are
+generally pretty accurate, but when they are off, the result can make processing
+a query take much more time and resources than it might otherwise.
+
+* A **query plan** is sometimes called a **query execution plan**. It is a
+sequence of steps used to access data in a SQL relational database management
+system.
+
+Fortunately, there are ways to give the database hints (or requirements) about
+how it should execute a query.
+
+## How PostgreSQL Executes a Query ##
+
+
