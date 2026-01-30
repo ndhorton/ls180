@@ -376,3 +376,64 @@ If `LIMIT` or `OFFSET` clauses are included in the query, these are used to
 adjust which rows in the result set are returned.
 
 # 2:14 Table and Column Aliases #
+
+When we alias a *table* in an `AS` clause, PostgreSQL expects us to use that
+new name everywhere else in the scope of the query.
+
+We generally avoid table aliasing unless the query would grow unwieldly without
+it. Aliasing *columns* is much more common, since we want the column names that
+come back in the result set to make sense to the application. For instance, it
+is quite common for a join to produce a result set with two identically named
+columns (with `id` being very common).
+
+* Table names are aliased in the `FROM` and `JOIN` clauses; they are applied
+before execution of the query and they have query-wide scope. Everywhere in the
+scope of the query you *must* refer to the table by its alias, since the
+original name is de-activated for the scope of the query. The only place you use
+the original name is as part of the aliasing itself.
+
+* Column aliases behave differently. Column aliases are part of the select list,
+and as such are not applied until that stage of execution. This means we cannot
+use column aliases in `WHERE` or `HAVING` clauses, but we can use them in
+`ORDER BY` clauses. In PostgreSQL, and come other RDBMSs, we can also use column
+aliases in a `GROUP BY` clause, but *this is a convenience feature of PostgreSQL
+and is not part of the SQL standard*. Therefore, in PostgreSQL it is fine, but
+won't necessarily be portable.
+
+In this sense, table aliases are largely for SQL legibility, whereas column
+aliases are more about the output (what names are returned to the application).
+
+Aliases do not add performance overhead, do not change the underlying schema,
+and do not change the logical execution of a query. Aliases only change the
+names used within the query and/or within the result set.
+
+# 2:15 Summary #
+
+* SQL is a special-purpose, declarative language used to manipulate the
+structure and values of datasets stored in a relational database.
+* SQL is comprised of three sub-languages: DDL, DML, and DCL.
+* SQL is made up of statements, which must be terminated by a semi-colon.
+* PostgreSQL provides many data types.
+* `NULL` is a special value that represents the absence of any value.
+* `NULL` values must be compared using `IS NULL` or `IS NOT NULL`.
+* Database dumps can be loaded using `psql -d database_name < file.sql`.
+* Table columns can have default values, which are specified using
+`SET DEFAULT`.
+* Table columns can be disallowed from storing `NOT` values using
+`SET NOT NULL`.
+* `CHECK` constraints are rules that must be met by the data stored in a table.
+* A *natural key* is an existing value in a dataset that can be used to uniquely
+identify each row of data in that dataset.
+* A *surrogate key* is a value that is created solely for the purpose of
+identifying a row of data in a database table.
+* A *primary key* is a value that is used to uniquely identify the rows in a
+table. It cannot be `NULL` and must be unique within a table column. They are
+created using `PRIMARY KEY`, and only one column per table can be `PRIMARY KEY`.
+* `serial` columns are typically used to create auto-incrementing columns in
+PostgreSQL.
+* `AS` is used to specify an alias for tables and columns within a SQL
+statement.
+
+
+
+
