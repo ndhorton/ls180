@@ -332,4 +332,130 @@ non-existent table rows. To further mitigate error, our join tables should also
 have a `UNIQUE (a_id, b_id)` table constraint to guarentee that each pair of
 foreign key references is unique.
 
+# 3:13: Converting a 1:M Relationship to a M:M Relationship #
+
+When creating a join table, the table name should consist of the joined tables'
+names in alphabetical order, separated by an underscore.
+
+We can replace the `VALUES (column_1_value, ...)` part of an `INSERT` statement
+with a subquery, and it will insert the columns of datareturned by the subquery
+into the table columns specified by the `INSERT` statement.
+
+For example,
+```sql
+INSERT INTO films_directors (film_id, director_id) (
+    SELECT id, director_id
+    FROM films
+);
+```
+
+`VALUES` is just a special type of `SELECT` and `INSERT` writes the result of
+arbitrary `SELECT` statements into the table.
+
+The reason `VALUES` is often used with `INSERT` is that many RDBMSs don't
+support `SELECT` without a `FROM` clause, so using `VALUES` is more convenient
+and portable.
+
+# 3:14: SQL Fundamentals --- Many to Many
+
+## `CASE` Expressions ##
+
+The SQL `CASE` expression is a generic conditional expression, similar to
+if/else statements in other programming languages.
+
+```sql
+SELECT a,
+       CASE WHEN a=1 THEN 'one'
+            WHEN a=2 THEN 'two'
+            ELSE 'other'
+       END
+    FROM test;
+```
+
+There is a 'simple' more switch-like case statement syntax:
+```sql
+CASE expression
+    WHEN value THEN result
+    [WHEN ...]
+    [ELSE result]
+END
+```
+
+## Window Functions ##
+
+A **windown function** performs a calculation across a set of table rows that
+are somehow related to the current row.
+
+This is comparable to the type of calculation that can be done with an aggregate
+function. But unlike regular aggregate functions, use of a window function does
+not cause rows to become grouped into a single output row --- the rows retain
+their separate identities. Behind the scenes, the window function is able to
+access more than just the current row of the query result.
+
+Some aggregate functions can also be used as window functions. Some window
+functions are always window functions. What distinguishes a window function call
+syntactically is that a window function call always contains an `OVER` clause
+that directly follows the function's name and arguments.
+
+The `OVER` clause determines exactly how the rows of the query are split up for
+processing by the window function. The `PARTITION BY` list within `OVER`
+specifies dividing the rows into groups, or partitions, that share the same
+values of the `PARTITION BY` expression(s). For each row, the window function is
+computed across the rows that fall into the same partition as the current row.
+
+You can also control the order in which rows are processed by window functions
+using `ORDER BY` within `OVER`. (The window `ORDER BY` does not even have to
+match the order in which the rows are output.)
+
+The rows considered by a window function are those of the 'virtual table'
+produced by the query's `FROM` clause as filtered by its `WHERE`, `GROUP BY` and
+`HAVING` clauses, if any. For example, a row removed because it does not meet
+the `WHERE` condition is not seen by any window function. A query can have
+multiple window functions that slice up the data in different ways by means of
+different `OVER` clauses, but they all act on the same collection of rows
+defined by this virtual table.
+
+It is possible to omit `PARTITION BY`, in which case there is just one partition
+containing all the rows. `ORDER BY` can be omitted if order of processing is not
+important.
+
+For each row, there is a set of rows within its partition called its *window
+frame*. Many (though not all) window functions act only on the rows of the
+window frame, rather than of the whole partition.
+
+By default, if `ORDER BY` is supplied then the frame consists of all rows from
+the start of the partition through the current row, plus any following rows that
+are equal to the current row according to the `ORDER BY` clause. When `ORDER BY`
+is omitted the default frame consists of all rows in the partition.
+
+Window functions are permitted only in the `SELECT` list and the `ORDER BY`
+clause of the query. They are forbidden elsewhere, such as in `GROUP BY`,
+`HAVING`, and `WHERE` clauses. This is because they logically execute after the
+processing of those clauses. Also, window functions execute *after* regular
+aggregate functions. This means it is valid to include an aggregate function
+call in the arguments of a window function call, but not vice versa.
+
+* Note: you should *always* think about sort order, even when you *happen* to
+get the results in the order you want without an `ORDER BY` clause. You should
+generally include an `ORDER BY` when solving an exercise or problem, even if it
+is not strictly necessary because the rows happen to be returned in the looked
+for order.
+
+# 3:15 Summary #
+
+* *Relational database* are called *relational* because they persist data in a set
+of *relations*, or, as they are more commonly called, *tables*.
+* A *relationship* is a connection between entity instances, or rows of data,
+usually resulting from what those rows of data represent.
+* The three levels of schema are *conceptual*, *logical*, and *physical*.
+* The three types of relationship are *one-to-one*, *one-to-many*, and
+*many-to-many*.
+* A *conceptual schema* is a high-level design focused on identifying entities
+and their relationships.
+* A *physical schema* is a low-level database-specific design focused on
+implementation.
+* *Cardinality* is the number of objects on each side of the relationship.
+* The *modality* of a relationship indicates if that relationship is required or
+not.
+* Data has *referential integrity* if it requireds all references to be valid.
 
