@@ -7,3 +7,4 @@
 * `ON DELETE CASCADE`
 * join tables (many-to-many relationships)
 * the three anomalies
+* types of subquery: scalar, correlative, transient table aliases, etc
