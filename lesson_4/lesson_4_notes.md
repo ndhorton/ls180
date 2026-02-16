@@ -294,3 +294,9 @@ query's result table.
 * Note: `EXPLAIN` is not a statement in the SQL standard, but it is implemented
 in other RDBMSs.
 
+# 4:6 Summary #
+
+* How indexes can be used as part of database optimization
+* Comparing the performance of SQL statements
+* Using subqueries as an alternative to joins
+

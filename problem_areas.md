@@ -1,3 +1,12 @@
+* order of operations
+    1. Joins necessary tables
+    2. `WHERE` clause filter
+    3. Grouping and aggregation operations
+    4. `HAVING` clause filter
+    5. Evaluation of `SELECT` expression list
+    6. Sorting
+    7. Limiting
+
 * Table vs column constraints
 * `NULL` sort order
 * Types of relationships
