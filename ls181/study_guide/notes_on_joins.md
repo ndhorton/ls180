@@ -59,6 +59,9 @@ SELECT *
        CROSS JOIN table_b;
 ```
 
+In real databases, the use cases for `CROSS JOIN` are very rare. They are more
+likely to be used for generating test data than for production queries.
+
 ### Inner Joins ###
 
 When we make an inner join, we must specify a **join condition** in an `ON`
